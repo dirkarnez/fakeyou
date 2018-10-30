@@ -1,0 +1,22 @@
+[
+  {
+    "/articles": {
+      "methodType": "GET",
+      "randomFailure": "true",
+      "fakeReturn": [
+        {
+          "a": "string"
+        }
+      ]
+    }
+  },
+  {
+    "/save": {
+      "methodType": "GET",
+      "randomFailure": "true",
+      "fakeReturn": {
+        "a": "string"
+      }
+    }
+  }
+]
