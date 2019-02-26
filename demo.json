@@ -1,22 +1,38 @@
 [
   {
-    "/articles": {
-      "methodType": "GET",
-      "randomFailure": "true",
-      "fakeReturn": [
-        {
-          "a": "string"
+    "namespace": "config",
+    "routes": [
+      {
+        "/items": {
+          "methodType": "GET",
+          "randomFailure": "true",
+          "fakeReturn": [
+            {
+              "key": 1,
+              "code": "B0001"
+            },
+            {
+              "key": 2,
+              "code": "B0002"
+            }
+          ]
         }
-      ]
-    }
-  },
-  {
-    "/save": {
-      "methodType": "GET",
-      "randomFailure": "true",
-      "fakeReturn": {
-        "a": "string"
+      },
+      {
+        "/save": {
+          "methodType": "GET",
+          "randomFailure": "true",
+          "fakeReturn": {
+            "a": "string"
+          }
+        }
+      },
+      {
+        "/demo": {
+          "methodType": "GET",
+          "randomFailure": "false"
+        }
       }
-    }
+    ]
   }
 ]
