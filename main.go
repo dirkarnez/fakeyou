@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/gin-contrib/cors"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
@@ -51,30 +52,46 @@ func parseProfile(profile string) error {
 	
 	r := gin.Default()
 
+	c := cors.New(cors.Config{
+		AllowMethods:     []string{"*"},
+		AllowHeaders:     []string{"*"},
+		AllowCredentials: true,
+		AllowOriginFunc: func(origin string) bool {
+			return true
+		},
+		MaxAge: 12 * time.Hour,
+	})
+
+	r.Use(c)
+	
 	for _, fakeProfileNameSpace := range fakeProfileNameSpaces {
-		group := r.Group(fakeProfileNameSpace.Namespace)
-		{
-			for _, method := range fakeProfileNameSpace.Routes {
-				for methodName, methodProfile := range method {
-					group.Handle(methodProfile.MethodType, methodName, func(c *gin.Context) {
-						indicator := 0
+		var group gin.IRoutes
+		group = r.Group(fakeProfileNameSpace.Namespace)
+		group = group.Use(c)
+		group.OPTIONS("/", func(c *gin.Context) {
+			c.AbortWithStatus(204)
+		})
+		
+		for _, method := range fakeProfileNameSpace.Routes {
+			for methodName, methodProfile := range method {
+				group.Handle(methodProfile.MethodType, methodName, func(c *gin.Context) {
+					indicator := 0
 
-						if methodProfile.RandomFailure == "true" {
-							rand.Seed(time.Now().UnixNano())
-							indicator = rand.Intn(2)
-						}
+					if methodProfile.RandomFailure == "true" {
+						rand.Seed(time.Now().UnixNano())
+						indicator = rand.Intn(2)
+					}
 
-						if indicator == 0 {
-							if methodProfile.FakeReturn != nil {
-								c.JSON(200, *methodProfile.FakeReturn)
-							} else {
-								c.Status(http.StatusOK)
-							}
+					if indicator == 0 {
+						if methodProfile.FakeReturn != nil {
+							c.JSON(200, *methodProfile.FakeReturn)
 						} else {
-							c.Status(http.StatusNotFound)
+							c.Status(http.StatusOK)
 						}
-					})
-				}
+					} else {
+						c.Status(http.StatusNotFound)
+					}
+				})
 			}
 		}
 	}
