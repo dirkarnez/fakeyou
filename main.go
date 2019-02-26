@@ -11,10 +11,15 @@ import (
 	"time"
 )
 
-type methodProfile struct {
+type MethodProfile struct {
 	MethodType string `json:"methodType"`
 	RandomFailure string `json:"randomFailure"`
 	FakeReturn *json.RawMessage `json:"fakeReturn"`
+}
+
+type FakeProfileNameSpace struct {
+	Namespace string `json:"namespace"`
+	Routes []map[string]MethodProfile `json:"routes"`
 }
 
 var (
@@ -39,36 +44,41 @@ func parseProfile(profile string) error {
 		return err
 	}
 
-	var dat []map[string]methodProfile
-	
-	if err := json.Unmarshal(raw, &dat); err != nil {
+	var fakeProfileNameSpaces []FakeProfileNameSpace
+	if err := json.Unmarshal(raw, &fakeProfileNameSpaces); err != nil {
 		return err
 	}
-
+	
 	r := gin.Default()
-	for _, method := range dat {
-		for methodName, methodProfile := range method {
-			r.Handle(methodProfile.MethodType, methodName, func(c *gin.Context) {
-				indicator := 0
 
-				if methodProfile.RandomFailure == "true" {
-					rand.Seed(time.Now().UnixNano())
-					indicator = rand.Intn(2)
+	for _, fakeProfileNameSpace := range fakeProfileNameSpaces {
+		group := r.Group(fakeProfileNameSpace.Namespace)
+		{
+			for _, method := range fakeProfileNameSpace.Routes {
+				for methodName, methodProfile := range method {
+					group.Handle(methodProfile.MethodType, methodName, func(c *gin.Context) {
+						indicator := 0
+
+						if methodProfile.RandomFailure == "true" {
+							rand.Seed(time.Now().UnixNano())
+							indicator = rand.Intn(2)
+						}
+
+						if indicator == 0 {
+							if methodProfile.FakeReturn != nil {
+								c.JSON(200, *methodProfile.FakeReturn)
+							} else {
+								c.Status(http.StatusOK)
+							}
+						} else {
+							c.Status(http.StatusNotFound)
+						}
+					})
 				}
-
-				if indicator == 0 {
-					if methodProfile.FakeReturn != nil {
-						c.JSON(200, *methodProfile.FakeReturn)
-					} else {
-						c.Status(http.StatusOK)
-					}
-				} else {
-					c.Status(http.StatusNotFound)
-				}
-			})
-
+			}
 		}
 	}
+	
 	r.Run(addr)
 
 	return nil
